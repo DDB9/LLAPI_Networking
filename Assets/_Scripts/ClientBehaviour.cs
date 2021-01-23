@@ -13,7 +13,6 @@ public class ClientBehaviour : MonoBehaviour
     #endregion
 
     #region Generic Variables
-    public bool IsHost;
     public int PlayerNum;
     public bool yourTurn = false;
     public bool GameReady;
@@ -70,6 +69,12 @@ public class ClientBehaviour : MonoBehaviour
             if (cmd == NetworkEvent.Type.Connect)
             {
                 Debug.Log("Succesfully connected to the server!");
+
+                var writer = Driver.BeginSend(Connection);
+                if (PlayerNum == 1) writer.WriteUInt((uint)DataCodes.READY_PLAYER_ONE);
+                else if (PlayerNum == 2) writer.WriteUInt((uint)DataCodes.READY_PLAYER_TWO);
+                Driver.EndSend(writer);
+
                 Connected = true;
             }
 
@@ -82,12 +87,12 @@ public class ClientBehaviour : MonoBehaviour
                     case (uint)DataCodes.PASS_TURN:
                         GameManager.Instance.Turn = true;
                         break;
+
+                    case (uint)DataCodes.START_GAME:
+                        GameReady = true;
+                        break;
                 }
 
-                //Disconnect client.
-                //Done = true;
-                //Connection.Disconnect(Driver);
-                //Connection = default;
             }
 
             // On a disconnect event, display disconnect message and reset connection.
@@ -96,6 +101,11 @@ public class ClientBehaviour : MonoBehaviour
                 Debug.Log("Client got disconnected from the server.");
                 Connection = default;
                 Connected = false;
+
+                //Disconnect client.
+                //Done = true;
+                //Connection.Disconnect(Driver);
+                //Connection = default;
             }
         }
     }
@@ -111,19 +121,6 @@ public class ClientBehaviour : MonoBehaviour
         var writer = Driver.BeginSend(Connection);
         writer.WriteByte(pAction);
         Driver.EndSend(writer);
-    } 
-    public void SendActionToServer(int pAction)
-    {
-        var writer = Driver.BeginSend(Connection);
-        writer.WriteByte((byte)pAction);
-        Driver.EndSend(writer);
-    }
-
-    private void PlaceObstacleLocally()
-    {
-        // Place obstacle locally.
-
-        // Send succes to server.
     }
 
     private void OnDestroy()

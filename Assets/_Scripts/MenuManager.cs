@@ -8,31 +8,43 @@ public class MenuManager : MonoBehaviour
     public GameObject WaitingForPlayers;
     public GameObject LookingForGame;
 
-    private bool joiningGame = false;
+    private GameObject client;
+    private GameObject server;
+    private bool enterGame;
 
     public void HostGame()
     {
         WaitingForPlayers.SetActive(true);
-        SceneManager.LoadScene(1);
+
+        server = new GameObject("server");
+        server.AddComponent<ServerBehaviour>(); 
+
+        client = new GameObject("client");
+        client.AddComponent<ClientBehaviour>();
+        client.GetComponent<ClientBehaviour>().PlayerNum = 1;
+
+        enterGame = true;
     }
 
     public void JoinGame()
     {
         LookingForGame.SetActive(true);
-        joiningGame = true;
+
+        client = new GameObject("client");
+        client.AddComponent<ClientBehaviour>();
+        client.GetComponent<ClientBehaviour>().PlayerNum = 2;
+
+        enterGame = true;
     }
 
     private void Update()
     {
-        if (joiningGame) SearchGame();
+        if (enterGame) EnterGame(); 
     }
 
-    private void SearchGame()
+    private void EnterGame()
     {
-        var client = new GameObject("client");
-        client.AddComponent<ClientBehaviour>();
-
-        if (client.GetComponent<ClientBehaviour>().Connected == true)
-            SceneManager.LoadScene(2);
+        if (client.GetComponent<ClientBehaviour>().GameReady)
+            SceneManager.LoadScene(1);
     }
 }

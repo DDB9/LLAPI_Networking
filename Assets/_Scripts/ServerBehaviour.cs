@@ -5,9 +5,6 @@ using Unity.Networking.Transport;
 
 public enum DataCodes
 {
-    ASSIGN_PLAYER_ONE = 1,
-    ASSIGN_PLAYER_TWO = 2,
-
     READY_PLAYER_ONE = 11,
     READY_PLAYER_TWO = 12,
 
@@ -22,8 +19,9 @@ public enum DataCodes
     RUNNER_ATTACK = 113,
 
     OK = 200,
-    PASS_TURN = 301,
-    END_GAME = 400,
+    START_GAME = 300,
+    PASS_TURN = 310,
+    END_GAME = 320,
 }
 
 public class ServerBehaviour : MonoBehaviour
@@ -86,11 +84,6 @@ public class ServerBehaviour : MonoBehaviour
         while ((nc = Driver.Accept()) != default)
         {
             connections.Add(nc);
-
-            var writer = Driver.BeginSend(nc);
-            writer.WriteByte((byte)DataCodes.ASSIGN_PLAYER_ONE);
-            // assign player, set player to ready.
-
             Debug.Log("Accepted incoming connection");
         }
         #endregion
@@ -108,7 +101,7 @@ public class ServerBehaviour : MonoBehaviour
             {
                 if (cmd == NetworkEvent.Type.Data)
                 {
-                    #region byte data
+                    #region uint data
                     byte dataCode = stream.ReadByte();
                     switch (dataCode)
                     {
@@ -139,24 +132,23 @@ public class ServerBehaviour : MonoBehaviour
 
                         case (byte)DataCodes.BLOCKER_OBSTACLE:
                             Debug.Log("Blocker has placed an obstacle!");
-                            ClientAction = DataCodes.RUNNER_JUMP;
+                            ClientAction = DataCodes.BLOCKER_OBSTACLE;
                             break;
 
                         case (byte)DataCodes.BLOCKER_ENEMY_GHOST:
                             Debug.Log("Blocker has sent a ghost!");
-                            ClientAction = DataCodes.RUNNER_DODGE;
+                            ClientAction = DataCodes.BLOCKER_ENEMY_GHOST;
                             break;
 
                         case (byte)DataCodes.BLOCKER_ENEMY_GRUNT:
                             Debug.Log("Client has sent a grunt!");
-                            ClientAction = DataCodes.RUNNER_ATTACK;
+                            ClientAction = DataCodes.BLOCKER_ENEMY_GRUNT;
                             break;
 
                         default:
                             break;
                     }
                     #endregion
-
                 }
 
                 // On a disconnect event, reset connection to default values, making it a stale connection.
@@ -173,15 +165,10 @@ public class ServerBehaviour : MonoBehaviour
     {
         if (pOneReady && pTwoReady)
         {
-            StartGame();
+            SendActionToClients((uint)DataCodes.START_GAME);
             return true;
         }
         return false;
-    }
-
-    private void StartGame()
-    {
-        throw new System.NotImplementedException();
     }
 
     public void SendActionToClients(uint pAction)
