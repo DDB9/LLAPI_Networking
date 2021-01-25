@@ -6,15 +6,22 @@ using UnityEngine.SceneManagement;
 public class GameManager : MonoBehaviour
 {
     public ClientBehaviour player;
+
+    [HideInInspector]
+    public bool GameReady = false;
+
     public bool Turn = false;
     public float TurnTimer = 2f;
+    public float StartGameTimer = 5f;
+    public GameObject TurnText;
 
     [Header("Arrays")]
     public Button[] Buttons;
     public TextMeshProUGUI[] Timers;
     public GameObject[] UIs;
 
-    private TextMeshProUGUI timerText;
+    private TextMeshProUGUI StartTimerText;
+    private TextMeshProUGUI TimerText;
     private GameObject playerUI;
 
     #region Singleton
@@ -34,34 +41,82 @@ public class GameManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        //foreach(Button button in Buttons) { button.interactable = false; }
+        /*TODO: Turn off functionality at game start. Start countdown. Either send message 
+         to server to send to clients to start game, or just start countdown. That should also work. 
+        Then game starts. Give blocker side about 3 seconds of descicion time, 
+        then the turn ends and runner has to react within abt. 1.5f seconds.*/
+        
         foreach(GameObject ui in UIs) { ui.SetActive(false); }
+        StartTimerText = Timers[0];
+        StartTimerText.gameObject.SetActive(true);
+        TurnText.SetActive(false);
 
+        // If the GameManager is instantiated (and therefore the Start method is called),
+        // this means that both players have joined and the game is ready to start.
+        GameReady = true;
         player = GameObject.Find("client").GetComponent<ClientBehaviour>();
-        if (player.PlayerNum == 1)
-        {
-            timerText = Timers[0];
-            playerUI = UIs[0];
-            playerUI.SetActive(true);
-        }
-        else if (player.PlayerNum == 2)
-        {
-            timerText = Timers[1];
-            playerUI = UIs[1];
-            playerUI.SetActive(true);
-        }
+        player.SendActionToServer((uint)DataCodes.LEVEL_LOADED);
     }
 
     // Update is called once per frame
     void Update()
     {
-        var timeLeft = TurnTimer -= Time.deltaTime;
-        timerText.SetText(timeLeft.ToString());
-        if (timeLeft < 0)
+        if (GameReady) GameSetup();
+        else
         {
-            // do something.
-            Turn = false;
-            ClientBehaviour.Instance.SendActionToServer((uint)DataCodes.PASS_TURN);
+            if (Turn)
+            {
+                // TODO: PASS TURN DOESNT WORK YET.
+                if (player.PlayerNum == 1)
+                {
+                    TurnTimer -= Time.deltaTime;
+                    TimerText.SetText(TurnTimer.ToString("F0"));
+                    if (TurnTimer < 0)
+                    {
+                        // do something.
+                        Turn = false;
+                        ClientBehaviour.Instance.SendActionToServer((uint)DataCodes.PLAYER_TWO_TURN);
+                        TurnTimer = 2f;
+                    }
+                } 
+                if (player.PlayerNum == 2)
+                {
+                    TurnTimer -= Time.deltaTime;
+                    TimerText.SetText(TurnTimer.ToString("F0"));
+                    if (TurnTimer < 0)
+                    {
+                        // do something.
+                        Turn = false;
+                        TurnTimer = 5f;
+                    }
+                }
+            }
+        }
+    }
+
+    private void GameSetup()
+    {
+        StartGameTimer -= Time.deltaTime;
+        StartTimerText.SetText("GAME START IN: " + StartGameTimer.ToString("F0"));
+        if (StartGameTimer < 0)
+        {
+            StartTimerText.gameObject.SetActive(false);
+
+            if (player.PlayerNum == 1)
+            {
+                TimerText = Timers[1];
+                playerUI = UIs[0];
+                playerUI.SetActive(true);
+            }
+            else if (player.PlayerNum == 2)
+            {
+                TimerText = Timers[2];
+                playerUI = UIs[1];
+                playerUI.SetActive(true);
+            }
+
+            TurnText.SetActive(true);
+            GameReady = false;
         }
     }
 

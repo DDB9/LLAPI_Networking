@@ -5,8 +5,12 @@ using Unity.Networking.Transport;
 
 public enum DataCodes
 {
+    DEBUG_MESSAGE = 0,
+
     READY_PLAYER_ONE = 11,
     READY_PLAYER_TWO = 12,
+
+    LEVEL_LOADED = 20,
 
     BLOCKER_DEFAULT = 100,
     BLOCKER_OBSTACLE = 101,
@@ -20,7 +24,8 @@ public enum DataCodes
 
     OK = 200,
     START_GAME = 300,
-    PASS_TURN = 310,
+    PLAYER_ONE_TURN = 311,
+    PLAYER_TWO_TURN = 312,
     END_GAME = 320,
 }
 
@@ -102,45 +107,62 @@ public class ServerBehaviour : MonoBehaviour
                 if (cmd == NetworkEvent.Type.Data)
                 {
                     #region uint data
-                    byte dataCode = stream.ReadByte();
+                    uint dataCode = stream.ReadByte();
                     switch (dataCode)
                     {
-                        case (byte)DataCodes.READY_PLAYER_ONE:
+                        case (uint)DataCodes.DEBUG_MESSAGE:
+                            Debug.Log("Debug Message was called!");
+                            break;
+
+                        case (uint)DataCodes.READY_PLAYER_ONE:
                             pOneReady = true;
                             PlayersReady();
                             break;
 
-                        case (byte)DataCodes.READY_PLAYER_TWO:
+                        case (uint)DataCodes.READY_PLAYER_TWO:
                             pTwoReady = true;
                             PlayersReady();
                             break;
 
-                        case (byte)DataCodes.RUNNER_JUMP:
+                        case (uint)DataCodes.LEVEL_LOADED:
+                            // Basically a verify ready call. Send signal back to the clients to start game.
+                            SendActionToClients((uint)DataCodes.PLAYER_ONE_TURN);
+                            break;
+
+                        case (uint)DataCodes.PLAYER_ONE_TURN:
+                            SendActionToClients((uint)DataCodes.PLAYER_ONE_TURN);
+                            break;
+                        
+                        case (uint)DataCodes.PLAYER_TWO_TURN:
+                            SendActionToClients((uint)DataCodes.PLAYER_TWO_TURN);
+                            break;
+
+                        case (uint)DataCodes.RUNNER_JUMP:
                             Debug.Log("Runner has jumped!");
                             ClientAction = DataCodes.RUNNER_JUMP;
                             break;
 
-                        case (byte)DataCodes.RUNNER_DODGE:
+                        case (uint)DataCodes.RUNNER_DODGE:
                             Debug.Log("Runner has dodged!");
                             ClientAction = DataCodes.RUNNER_DODGE;
                             break;
 
-                        case (byte)DataCodes.RUNNER_ATTACK:
+                        case (uint)DataCodes.RUNNER_ATTACK:
                             Debug.Log("Runner has attacked!");
                             ClientAction = DataCodes.RUNNER_ATTACK;
                             break;
 
-                        case (byte)DataCodes.BLOCKER_OBSTACLE:
+                        case (uint)DataCodes.BLOCKER_OBSTACLE:
                             Debug.Log("Blocker has placed an obstacle!");
                             ClientAction = DataCodes.BLOCKER_OBSTACLE;
                             break;
 
-                        case (byte)DataCodes.BLOCKER_ENEMY_GHOST:
+                        case (uint)DataCodes.BLOCKER_ENEMY_GHOST:
                             Debug.Log("Blocker has sent a ghost!");
                             ClientAction = DataCodes.BLOCKER_ENEMY_GHOST;
                             break;
 
-                        case (byte)DataCodes.BLOCKER_ENEMY_GRUNT:
+                        case (uint)DataCodes.BLOCKER_ENEMY_GRUNT:
                             Debug.Log("Client has sent a grunt!");
                             ClientAction = DataCodes.BLOCKER_ENEMY_GRUNT;
                             break;

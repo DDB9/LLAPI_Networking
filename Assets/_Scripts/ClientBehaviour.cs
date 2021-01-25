@@ -84,11 +84,22 @@ public class ClientBehaviour : MonoBehaviour
                 uint dataCode = stream.ReadUInt();
                 switch (dataCode)
                 {
-                    case (uint)DataCodes.PASS_TURN:
-                        GameManager.Instance.Turn = true;
+                    case (uint)DataCodes.PLAYER_ONE_TURN:
+                        if (PlayerNum == 1) GameManager.Instance.Turn = true;
+                        else GameManager.Instance.Turn = false;
+                        break;
+                    
+                    case (uint)DataCodes.PLAYER_TWO_TURN:
+                        if (PlayerNum == 2)
+                        {
+                            GameManager.Instance.Turn = true;
+                            SendActionToServer((uint)DataCodes.DEBUG_MESSAGE);
+                        }
+                        else GameManager.Instance.Turn = false;
                         break;
 
                     case (uint)DataCodes.START_GAME:
+                        Debug.Log("Players ready! Starting game...");
                         GameReady = true;
                         break;
                 }
@@ -106,6 +117,7 @@ public class ClientBehaviour : MonoBehaviour
                 //Done = true;
                 //Connection.Disconnect(Driver);
                 //Connection = default;
+                //Connected = false;
             }
         }
     }
