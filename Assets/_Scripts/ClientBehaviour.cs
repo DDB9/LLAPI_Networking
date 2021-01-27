@@ -86,7 +86,7 @@ public class ClientBehaviour : MonoBehaviour
                 {
                     case (uint)DataCodes.PLAYER_ONE_TURN:
                         if (PlayerNum == 1) GameManager.Instance.Turn = true;
-                        else GameManager.Instance.Turn = false;
+                        else if (PlayerNum == 2) GameManager.Instance.Turn = false;
                         break;
                     
                     case (uint)DataCodes.PLAYER_TWO_TURN:
@@ -95,7 +95,7 @@ public class ClientBehaviour : MonoBehaviour
                             GameManager.Instance.Turn = true;
                             SendActionToServer((uint)DataCodes.DEBUG_MESSAGE);
                         }
-                        else GameManager.Instance.Turn = false;
+                        else if (PlayerNum == 1) GameManager.Instance.Turn = false;
                         break;
 
                     case (uint)DataCodes.START_GAME:

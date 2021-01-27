@@ -69,27 +69,35 @@ public class GameManager : MonoBehaviour
                 // TODO: PASS TURN DOESNT WORK YET.
                 if (player.PlayerNum == 1)
                 {
+                    TurnText.GetComponent<TextMeshProUGUI>().SetText("CURRENT PLAYER TURN: BLOCKER");
                     TurnTimer -= Time.deltaTime;
                     TimerText.SetText(TurnTimer.ToString("F0"));
-                    if (TurnTimer < 0)
+                    if (TurnTimer <= 0)
                     {
                         // do something.
                         Turn = false;
-                        ClientBehaviour.Instance.SendActionToServer((uint)DataCodes.PLAYER_TWO_TURN);
+                        player.SendActionToServer((uint)DataCodes.PLAYER_TWO_TURN);
                         TurnTimer = 2f;
                     }
                 } 
-                if (player.PlayerNum == 2)
+                else if (player.PlayerNum == 2)
                 {
+                    TurnText.GetComponent<TextMeshProUGUI>().SetText("CURRENT PLAYER TURN: RUNNER");
                     TurnTimer -= Time.deltaTime;
                     TimerText.SetText(TurnTimer.ToString("F0"));
-                    if (TurnTimer < 0)
+                    if (TurnTimer <= 0)
                     {
                         // do something.
                         Turn = false;
+                        player.SendActionToServer((uint)DataCodes.PLAYER_ONE_TURN);
                         TurnTimer = 5f;
                     }
                 }
+            }
+            else
+            {
+                if (player.PlayerNum == 1) TurnText.GetComponent<TextMeshProUGUI>().SetText("CURRENT PLAYER TURN: RUNNER");
+                else if (player.PlayerNum == 2) TurnText.GetComponent<TextMeshProUGUI>().SetText("CURRENT PLAYER TURN: BLOCKER");
             }
         }
     }

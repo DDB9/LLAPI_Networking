@@ -126,14 +126,17 @@ public class ServerBehaviour : MonoBehaviour
 
                         case (uint)DataCodes.LEVEL_LOADED:
                             // Basically a verify ready call. Send signal back to the clients to start game.
-                            SendActionToClients((uint)DataCodes.PLAYER_ONE_TURN);
+                            // ! Starting player:
+                            SendActionToClients((uint)DataCodes.PLAYER_TWO_TURN);
                             break;
 
                         case (uint)DataCodes.PLAYER_ONE_TURN:
+                            Debug.Log("Player Two's turn is over!");
                             SendActionToClients((uint)DataCodes.PLAYER_ONE_TURN);
                             break;
                         
                         case (uint)DataCodes.PLAYER_TWO_TURN:
+                            Debug.Log("Player One's turn is over!");
                             SendActionToClients((uint)DataCodes.PLAYER_TWO_TURN);
                             break;
 
