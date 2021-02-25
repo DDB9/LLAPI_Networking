@@ -1,7 +1,15 @@
-﻿using UnityEngine;
+﻿using TMPro;
+using UnityEngine;
 using Unity.Collections;
-using UnityEngine.Assertions;
 using Unity.Networking.Transport;
+
+
+/*
+ * THIS SCRIPT CONTAINS CODE TO OPERATE THE GAME SERVER. PLEASE NOTE THAT THIS SCRIPT WAS CREATED WITH
+ * THE PRESCENSE OF A MASTER CLIENT IN MIND. HOWEVER, THIS IS NO LONGER THE CASE. PLEASE EDIT THE SCRIPT
+ * SO THAT IT IS COMPLETELY DEVOID OF ANY CLIENT-BASED OPERATIONS. THIS OBJECT SHOULD ONLY BE USED TO RELAY
+ * INFORMATION FROM ONE CLIENT TO THE OTHER.
+*/
 
 public enum DataCodes
 {
@@ -37,6 +45,7 @@ public class ServerBehaviour : MonoBehaviour
     #endregion
 
     #region Generic Variables
+    public TextMeshProUGUI ServerNumber;
     public DataCodes ServerAction, ClientAction;
 
     private bool pOneReady, pTwoReady;
@@ -66,6 +75,8 @@ public class ServerBehaviour : MonoBehaviour
         else Driver.Listen();
 
         connections = new NativeList<NetworkConnection>(2, Allocator.Persistent);
+
+        ServerNumber.SetText("Server number: " + Main.Instance.CurrentServer.ServerID);
     }
 
     void Update()

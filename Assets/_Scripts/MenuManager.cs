@@ -1,16 +1,32 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class MenuManager : MonoBehaviour
 {
+    public TextMeshProUGUI HeaderText;
     public GameObject WaitingForPlayers;
     public GameObject LookingForGame;
 
     private GameObject client;
     private GameObject server;
     private bool enterGame;
+
+    private void Awake()
+    {
+        if (Main.Instance.CurrentUser == null)
+        {
+            Debug.LogError("No user detected! Please log in.");
+            SceneManager.LoadScene("Login");
+        }
+    }
+
+    private void Start()
+    {
+        HeaderText.SetText("Welcome " + Main.Instance.CurrentUser.Username + "!");
+    }
 
     public void HostGame()
     {
