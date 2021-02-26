@@ -2,6 +2,7 @@
 using UnityEngine;
 using Unity.Collections;
 using Unity.Networking.Transport;
+using System.Collections.Generic;
 
 
 /*
@@ -15,8 +16,8 @@ public enum DataCodes
 {
     DEBUG_MESSAGE = 0,
 
-    READY_PLAYER_ONE = 11,
-    READY_PLAYER_TWO = 12,
+    READY_PLAYER_ONE = 10,
+    READY_PLAYER_TWO = 11,
 
     LEVEL_LOADED = 20,
 
@@ -49,6 +50,9 @@ public class ServerBehaviour : MonoBehaviour
     public DataCodes ServerAction, ClientAction;
 
     private bool pOneReady, pTwoReady;
+
+    [SerializeField]
+    private List<NativeString64> players = new List<NativeString64>();
     #endregion
 
     #region Singleton
@@ -119,6 +123,7 @@ public class ServerBehaviour : MonoBehaviour
                 {
                     #region uint data
                     uint dataCode = stream.ReadByte();
+
                     switch (dataCode)
                     {
                         case (uint)DataCodes.DEBUG_MESSAGE:
@@ -218,6 +223,18 @@ public class ServerBehaviour : MonoBehaviour
             writer.WriteUInt(pAction);
             Driver.EndSend(writer);
         }
+    }   
+    public void SendActionToClient(NetworkConnection pClient, NativeString64 pAction)
+    {
+        if (!pClient.IsCreated)
+        {
+            Debug.LogWarning("You are trying to send a message to a stale connection");
+            return;
+        }
+
+        var writer = Driver.BeginSend(pClient);
+        writer.WriteString(pAction);
+        Driver.EndSend(writer);
     }
 
     private void DetermineTurnWinner()

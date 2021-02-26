@@ -7,11 +7,9 @@ using UnityEngine.SceneManagement;
 public class MenuManager : MonoBehaviour
 {
     public TextMeshProUGUI HeaderText;
-    public GameObject WaitingForPlayers;
-    public GameObject LookingForGame;
+    public GameObject LoadingScreen;
 
     private GameObject client;
-    private GameObject server;
     private bool enterGame;
 
     private void Awake()
@@ -28,24 +26,23 @@ public class MenuManager : MonoBehaviour
         HeaderText.SetText("Welcome " + Main.Instance.CurrentUser.Username + "!");
     }
 
-    public void HostGame()
+    public void PlayBlocker()
     {
-        WaitingForPlayers.SetActive(true);
+        LoadingScreen.SetActive(true);
 
-        server = new GameObject("server");
-        server.AddComponent<ServerBehaviour>(); 
-
+        // Create a new client object for this client.
         client = new GameObject("client");
         client.AddComponent<ClientBehaviour>();
         client.GetComponent<ClientBehaviour>().PlayerNum = 1;
 
         enterGame = true;
-    }
+    }    
 
-    public void JoinGame()
+    public void PlayRunner()
     {
-        LookingForGame.SetActive(true);
+        LoadingScreen.SetActive(true);
 
+        // Create a new client object for this client.
         client = new GameObject("client");
         client.AddComponent<ClientBehaviour>();
         client.GetComponent<ClientBehaviour>().PlayerNum = 2;
@@ -61,6 +58,6 @@ public class MenuManager : MonoBehaviour
     private void EnterGame()
     {
         if (client.GetComponent<ClientBehaviour>().GameReady)
-            SceneManager.LoadScene(1);
+            SceneManager.LoadScene("Game");
     }
 }

@@ -9,6 +9,7 @@ public class Login : MonoBehaviour
     public InputField UsernameField;
     public InputField PasswordField;
     public Button SubmitButton;
+    public Button PlayButton;
 
     // Start is called before the first frame update
     void Start()

@@ -12,7 +12,7 @@ EditorBuildSettings:
     path: Assets/Scenes/Server.unity
     guid: 6c54f1b8c6d8d4c47b17f84e45397b58
   - enabled: 1
-    path: Assets/Scenes/GameChoice.unity
+    path: Assets/Scenes/WelcomeScreen.unity
     guid: 718246560420428498ea8b36ecbd50c5
   - enabled: 1
     path: Assets/Scenes/Game.unity

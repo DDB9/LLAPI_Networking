@@ -8,6 +8,7 @@ using TMPro;
 public class WebRequester : MonoBehaviour
 {
     public TextMeshProUGUI ServerMessagesText;
+    public GameObject WelcomeScreen;
 
     readonly string POST_URL = "https://studenthome.hku.nl/~daan.debruijn/userloginWebrequest.php?";
     readonly string POST_URL_SERVER = "https://studenthome.hku.nl/~daan.debruijn/ServerloginWebrequest.php?";
@@ -51,7 +52,8 @@ public class WebRequester : MonoBehaviour
                         Score = 0
                     };
                     Debug.Log("Logged in as " + _result);
-                    SceneManager.LoadScene("GameChoice");
+                    WelcomeScreen.SetActive(true);
+                    ServerMessagesText.SetText("");
                 }
                 else HandleError(_result);
             }

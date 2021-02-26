@@ -70,10 +70,8 @@ public class ClientBehaviour : MonoBehaviour
             {
                 Debug.Log("Succesfully connected to the server!");
 
-                var writer = Driver.BeginSend(Connection);
-                if (PlayerNum == 1) writer.WriteUInt((uint)DataCodes.READY_PLAYER_ONE);
-                else if (PlayerNum == 2) writer.WriteUInt((uint)DataCodes.READY_PLAYER_TWO);
-                Driver.EndSend(writer);
+                if (PlayerNum == 1) SendActionToServer((uint)DataCodes.READY_PLAYER_ONE);
+                else if (PlayerNum == 2) SendActionToServer((uint)DataCodes.READY_PLAYER_TWO);
 
                 Connected = true;
             }
@@ -132,6 +130,12 @@ public class ClientBehaviour : MonoBehaviour
     {
         var writer = Driver.BeginSend(Connection);
         writer.WriteByte(pAction);
+        Driver.EndSend(writer);
+    }
+    public void SendActionToServer(NativeString64 pAction)
+    {
+        var writer = Driver.BeginSend(Connection);
+        writer.WriteString(pAction);
         Driver.EndSend(writer);
     }
 

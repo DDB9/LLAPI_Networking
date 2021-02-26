@@ -11,9 +11,11 @@ public class MainMenuManager : MonoBehaviour
         Login.SetActive(false);
         ServerLogin.SetActive(false);
         Register.SetActive(false);
-        MainObject.SetActive(true);
 
+        Main.Instance.Web.WelcomeScreen.SetActive(false);
         Main.Instance.Web.ServerMessagesText.SetText("");
+
+        MainObject.SetActive(true);
     }
 
     public void OpenLogin()
