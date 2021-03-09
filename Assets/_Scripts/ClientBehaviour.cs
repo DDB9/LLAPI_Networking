@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using Unity.Collections;
-using UnityEngine.Assertions;
+using System.Collections;
 using Unity.Networking.Transport;
 
 public class ClientBehaviour : MonoBehaviour
@@ -10,6 +10,7 @@ public class ClientBehaviour : MonoBehaviour
     public NetworkConnection Connection;
     public bool Connected;
     public bool Done;
+    public float PingRate = 1f;
     #endregion
 
     #region Generic Variables
@@ -42,6 +43,8 @@ public class ClientBehaviour : MonoBehaviour
         var endpoint = NetworkEndPoint.LoopbackIpv4;
         endpoint.Port = 9000;
         Connection = Driver.Connect(endpoint);
+        
+        InvokeRepeating(nameof(PingServer), 0f, 1f);
     }
 
     void Update()
@@ -82,22 +85,21 @@ public class ClientBehaviour : MonoBehaviour
                 uint dataCode = stream.ReadUInt();
                 switch (dataCode)
                 {
-                    case (uint)DataCodes.PLAYER_ONE_TURN:
-                        if (PlayerNum == 1) GameManager.Instance.Turn = true;
-                        else if (PlayerNum == 2) GameManager.Instance.Turn = false;
+                    case (uint)DataCodes.DEBUG_MESSAGE:
+                        Debug.Log("Debug message recieved!");
                         break;
                     
-                    case (uint)DataCodes.PLAYER_TWO_TURN:
-                        if (PlayerNum == 2)
-                        {
-                            GameManager.Instance.Turn = true;
-                            SendActionToServer((uint)DataCodes.DEBUG_MESSAGE);
-                        }
-                        else if (PlayerNum == 1) GameManager.Instance.Turn = false;
+                    case (uint)DataCodes.PING:
+                        break;
+
+                    case (uint)DataCodes.PASS_TURN:
+                        GameManager.Instance.Turn = true;
                         break;
 
                     case (uint)DataCodes.START_GAME:
                         Debug.Log("Players ready! Starting game...");
+                        if (PlayerNum == 1) GameManager.Instance.Turn = true;
+                        else GameManager.Instance.Turn = false;
                         GameReady = true;
                         break;
                 }
@@ -110,6 +112,7 @@ public class ClientBehaviour : MonoBehaviour
                 Debug.Log("Client got disconnected from the server.");
                 Connection = default;
                 Connected = false;
+                CancelInvoke();
 
                 //Disconnect client.
                 //Done = true;
@@ -137,6 +140,16 @@ public class ClientBehaviour : MonoBehaviour
         var writer = Driver.BeginSend(Connection);
         writer.WriteString(pAction);
         Driver.EndSend(writer);
+    }
+    
+    public void PingServer()
+    {
+        if (Connected)
+        {
+            var writer = Driver.BeginSend(Connection);
+            writer.WriteUInt((uint)DataCodes.PING);
+            Driver.EndSend(writer);
+        }
     }
 
     private void OnDestroy()

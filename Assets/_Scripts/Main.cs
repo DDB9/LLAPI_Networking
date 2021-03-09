@@ -2,6 +2,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
+using Unity.Networking.Transport;
 using UnityEngine.UI;
 
 public class Main : MonoBehaviour
@@ -14,6 +15,12 @@ public class Main : MonoBehaviour
     public WebRequester Web; 
     public User CurrentUser;
     public Server CurrentServer;
+
+    [HideInInspector]
+    public NetworkConfigParameter NetworkConfig = new NetworkConfigParameter()
+    {
+        disconnectTimeoutMS = 30000,
+    };
 
     private void Awake()
     {

@@ -4,22 +4,17 @@ using Unity.Collections;
 using Unity.Networking.Transport;
 using System.Collections.Generic;
 
-
-/*
- * THIS SCRIPT CONTAINS CODE TO OPERATE THE GAME SERVER. PLEASE NOTE THAT THIS SCRIPT WAS CREATED WITH
- * THE PRESCENSE OF A MASTER CLIENT IN MIND. HOWEVER, THIS IS NO LONGER THE CASE. PLEASE EDIT THE SCRIPT
- * SO THAT IT IS COMPLETELY DEVOID OF ANY CLIENT-BASED OPERATIONS. THIS OBJECT SHOULD ONLY BE USED TO RELAY
- * INFORMATION FROM ONE CLIENT TO THE OTHER.
-*/
-
 public enum DataCodes
 {
     DEBUG_MESSAGE = 0,
+    PING = 1,
+    PASS_TURN = 2,
 
     READY_PLAYER_ONE = 10,
     READY_PLAYER_TWO = 11,
-
-    LEVEL_LOADED = 20,
+    
+    START_GAME = 20,
+    END_GAME = 21,
 
     BLOCKER_DEFAULT = 100,
     BLOCKER_OBSTACLE = 101,
@@ -30,14 +25,9 @@ public enum DataCodes
     RUNNER_JUMP = 111,
     RUNNER_DODGE = 112,
     RUNNER_ATTACK = 113,
-
-    OK = 200,
-    START_GAME = 300,
-    PLAYER_ONE_TURN = 311,
-    PLAYER_TWO_TURN = 312,
-    END_GAME = 320,
 }
 
+// TODO HANDLE DISCONNECTS AND TIMEOUTS
 public class ServerBehaviour : MonoBehaviour
 {
     #region Network Variables
@@ -46,8 +36,8 @@ public class ServerBehaviour : MonoBehaviour
     #endregion
 
     #region Generic Variables
-    public TextMeshProUGUI ServerNumber;
-    public DataCodes ServerAction, ClientAction;
+    public TextMeshProUGUI ServerNumber, ServerConnectionsNumber;
+    public DataCodes BlockerAction, RunnerAction;
 
     private bool pOneReady, pTwoReady;
 
@@ -106,6 +96,8 @@ public class ServerBehaviour : MonoBehaviour
             connections.Add(nc);
             Debug.Log("Accepted incoming connection");
         }
+
+        ServerConnectionsNumber.SetText("Open Connections: " + connections.Length);
         #endregion
 
         // Create a DataStreamReader and loop through all connections.
@@ -126,8 +118,16 @@ public class ServerBehaviour : MonoBehaviour
 
                     switch (dataCode)
                     {
+                        case (uint)DataCodes.PING:
+                            SendActionToClient(connections[i], (uint)DataCodes.PING);
+                            break;
+
                         case (uint)DataCodes.DEBUG_MESSAGE:
-                            Debug.Log("Debug Message was called!");
+                            SendActionToClient(connections[i], (uint)DataCodes.DEBUG_MESSAGE);
+                            break;
+
+                        case (uint)DataCodes.PASS_TURN:
+                            SendActionToOther(connections[i], (uint)DataCodes.PASS_TURN);
                             break;
 
                         case (uint)DataCodes.READY_PLAYER_ONE:
@@ -140,50 +140,36 @@ public class ServerBehaviour : MonoBehaviour
                             PlayersReady();
                             break;
 
-                        case (uint)DataCodes.LEVEL_LOADED:
-                            // Basically a verify ready call. Send signal back to the clients to start game.
-                            // ! Starting player:
-                            SendActionToClients((uint)DataCodes.PLAYER_TWO_TURN);
-                            break;
-
-                        case (uint)DataCodes.PLAYER_ONE_TURN:
-                            Debug.Log("Player Two's turn is over!");
-                            SendActionToClients((uint)DataCodes.PLAYER_ONE_TURN);
-                            break;
-                        
-                        case (uint)DataCodes.PLAYER_TWO_TURN:
-                            Debug.Log("Player One's turn is over!");
-                            SendActionToClients((uint)DataCodes.PLAYER_TWO_TURN);
-                            break;
-
                         case (uint)DataCodes.RUNNER_JUMP:
+                            // if (BlockerAction != Obstacle) subtract lives?
+                            // else continue game, maybe display success message.
+                            RunnerAction = DataCodes.RUNNER_JUMP;
                             Debug.Log("Runner has jumped!");
-                            ClientAction = DataCodes.RUNNER_JUMP;
                             break;
 
                         case (uint)DataCodes.RUNNER_DODGE:
+                            RunnerAction = DataCodes.RUNNER_DODGE;
                             Debug.Log("Runner has dodged!");
-                            ClientAction = DataCodes.RUNNER_DODGE;
                             break;
 
                         case (uint)DataCodes.RUNNER_ATTACK:
+                            RunnerAction = DataCodes.RUNNER_ATTACK;
                             Debug.Log("Runner has attacked!");
-                            ClientAction = DataCodes.RUNNER_ATTACK;
-                            break;
+                            break; 
 
                         case (uint)DataCodes.BLOCKER_OBSTACLE:
+                            BlockerAction = DataCodes.BLOCKER_OBSTACLE;
                             Debug.Log("Blocker has placed an obstacle!");
-                            ClientAction = DataCodes.BLOCKER_OBSTACLE;
                             break;
 
                         case (uint)DataCodes.BLOCKER_ENEMY_GHOST:
+                            BlockerAction = DataCodes.BLOCKER_ENEMY_GHOST;
                             Debug.Log("Blocker has sent a ghost!");
-                            ClientAction = DataCodes.BLOCKER_ENEMY_GHOST;
                             break;
 
                         case (uint)DataCodes.BLOCKER_ENEMY_GRUNT:
+                            BlockerAction = DataCodes.BLOCKER_ENEMY_GRUNT;
                             Debug.Log("Client has sent a grunt!");
-                            ClientAction = DataCodes.BLOCKER_ENEMY_GRUNT;
                             break;
 
                         default:
@@ -224,6 +210,7 @@ public class ServerBehaviour : MonoBehaviour
             Driver.EndSend(writer);
         }
     }   
+
     public void SendActionToClient(NetworkConnection pClient, NativeString64 pAction)
     {
         if (!pClient.IsCreated)
@@ -235,6 +222,40 @@ public class ServerBehaviour : MonoBehaviour
         var writer = Driver.BeginSend(pClient);
         writer.WriteString(pAction);
         Driver.EndSend(writer);
+    }    
+    public void SendActionToClient(NetworkConnection pClient, uint pAction)
+    {
+        if (!pClient.IsCreated)
+        {
+            Debug.LogWarning("You are trying to send a message to a stale connection");
+            return;
+        }
+
+        var writer = Driver.BeginSend(pClient);
+        writer.WriteUInt(pAction);
+        Driver.EndSend(writer);
+    }
+    /// <summary>
+    /// Sends an action to the other player from the one that the server has recieved a message from.
+    /// </summary>
+    /// <param name="pClient">Client that sent previous action to the server.</param>
+    /// <param name="pAction"></param>
+    public void SendActionToOther(NetworkConnection pClient, uint pAction)
+    {
+        Debug.LogWarning("Preparing to send message to client...");
+        for (int i = 0; i < connections.Length; i++)
+        {
+            // Skip a connection if it is stale.
+            if (!connections[i].IsCreated) continue;
+
+            if (connections[i] != pClient)
+            {
+                Debug.Log("Sending message to " + connections[i].ToString());
+                var writer = Driver.BeginSend(connections[i]);
+                writer.WriteUInt(pAction);
+                Driver.EndSend(writer);
+            }
+        }
     }
 
     private void DetermineTurnWinner()

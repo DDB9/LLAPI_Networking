@@ -8,10 +8,10 @@ public class GameManager : MonoBehaviour
     public ClientBehaviour player;
 
     [HideInInspector]
-    public bool GameReady = false;
+    public bool GameReady = true;
 
     public bool Turn = false;
-    public float TurnTimer = 2f;
+    public float TurnTimer = 5f;
     public float StartGameTimer = 5f;
     public GameObject TurnText;
 
@@ -53,51 +53,37 @@ public class GameManager : MonoBehaviour
 
         // If the GameManager is instantiated (and therefore the Start method is called),
         // this means that both players have joined and the game is ready to start.
-        GameReady = true;
-        player = GameObject.Find("client").GetComponent<ClientBehaviour>();
-        player.SendActionToServer((uint)DataCodes.LEVEL_LOADED);
+        GameReady = false;
+        player = FindObjectOfType<ClientBehaviour>();
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (GameReady) GameSetup();
+        if (!GameReady) GameSetup();
         else
         {
             if (Turn)
             {
-                // TODO: PASS TURN DOESNT WORK YET.
-                if (player.PlayerNum == 1)
-                {
-                    TurnText.GetComponent<TextMeshProUGUI>().SetText("CURRENT PLAYER TURN: BLOCKER");
-                    TurnTimer -= Time.deltaTime;
-                    TimerText.SetText(TurnTimer.ToString("F0"));
-                    if (TurnTimer <= 0)
-                    {
-                        // do something.
-                        Turn = false;
-                        player.SendActionToServer((uint)DataCodes.PLAYER_TWO_TURN);
-                        TurnTimer = 2f;
-                    }
-                } 
-                else if (player.PlayerNum == 2)
-                {
-                    TurnText.GetComponent<TextMeshProUGUI>().SetText("CURRENT PLAYER TURN: RUNNER");
-                    TurnTimer -= Time.deltaTime;
-                    TimerText.SetText(TurnTimer.ToString("F0"));
-                    if (TurnTimer <= 0)
-                    {
-                        // do something.
-                        Turn = false;
-                        player.SendActionToServer((uint)DataCodes.PLAYER_ONE_TURN);
-                        TurnTimer = 5f;
-                    }
-                }
+                foreach (Button button in Buttons) button.enabled = true;
+                TurnText.GetComponent<TextMeshProUGUI>().SetText("YOUR TURN");
+
+                // ! TIMER FUNCTIONALITY.
+                //TurnTimer -= Time.deltaTime;
+                //TimerText.SetText(TurnTimer.ToString("F0"));
+                //if (TurnTimer <= 0)
+                //{
+                //    // do something.
+                //    player.SendActionToServer((uint)DataCodes.PASS_TURN);
+                //    Turn = false;
+                //    if (player.PlayerNum == 1) TurnTimer = 5f;
+                //    else TurnTimer = 2f;
+                //}
             }
             else
             {
-                if (player.PlayerNum == 1) TurnText.GetComponent<TextMeshProUGUI>().SetText("CURRENT PLAYER TURN: RUNNER");
-                else if (player.PlayerNum == 2) TurnText.GetComponent<TextMeshProUGUI>().SetText("CURRENT PLAYER TURN: BLOCKER");
+                foreach (Button button in Buttons) button.enabled = false;
+                TurnText.GetComponent<TextMeshProUGUI>().SetText("OTHER PLAYER IS DECIDING...");
             }
         }
     }
@@ -124,19 +110,43 @@ public class GameManager : MonoBehaviour
             }
 
             TurnText.SetActive(true);
-            GameReady = false;
+            GameReady = true;
         }
     }
 
     #region Button Functions
     // Runner Actions
-    public void RunnerJump() { player.SendActionToServer((uint)DataCodes.RUNNER_JUMP); }
-    public void RunnerDodge() { player.SendActionToServer((uint)DataCodes.RUNNER_DODGE); }
-    public void RunnerAttack() { player.SendActionToServer((uint)DataCodes.RUNNER_ATTACK); }
+    public void RunnerJump() 
+    { 
+        player.SendActionToServer((uint)DataCodes.RUNNER_JUMP); 
+        player.SendActionToServer((uint)DataCodes.PASS_TURN);  
+    }
+    public void RunnerDodge() 
+    {
+        player.SendActionToServer((uint)DataCodes.RUNNER_DODGE);
+        player.SendActionToServer((uint)DataCodes.PASS_TURN);  
+    }
+    public void RunnerAttack() 
+    {
+        player.SendActionToServer((uint)DataCodes.RUNNER_ATTACK);
+        player.SendActionToServer((uint)DataCodes.PASS_TURN);  
+    }
 
     // Blocker Actions
-    public void BlockerObstacle() { player.SendActionToServer((uint)DataCodes.BLOCKER_OBSTACLE); }
-    public void BlockerGhost() { player.SendActionToServer((uint)DataCodes.BLOCKER_ENEMY_GHOST); }
-    public void BlockerGrunt() { player.SendActionToServer((uint)DataCodes.BLOCKER_ENEMY_GRUNT); }
+    public void BlockerObstacle() 
+    {
+        player.SendActionToServer((uint)DataCodes.BLOCKER_OBSTACLE);
+        player.SendActionToServer((uint)DataCodes.PASS_TURN);  
+    }
+    public void BlockerGhost() 
+    {
+        player.SendActionToServer((uint)DataCodes.BLOCKER_ENEMY_GHOST);
+        player.SendActionToServer((uint)DataCodes.PASS_TURN);  
+    }
+    public void BlockerGrunt() 
+    {
+        player.SendActionToServer((uint)DataCodes.BLOCKER_ENEMY_GRUNT);
+        player.SendActionToServer((uint)DataCodes.PASS_TURN);  
+    }
     #endregion
 }
