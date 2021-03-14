@@ -5,22 +5,22 @@ using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
-    public ClientBehaviour player;
+    public ClientBehaviour Client;
+    public int Score = 0;
+    public TextMeshProUGUI ScoreText;
 
     [HideInInspector]
     public bool GameReady = true;
 
     public bool Turn = false;
-    public float TurnTimer = 5f;
-    public float StartGameTimer = 5f;
+    public float GameTimer = 5f;
+    public TextMeshProUGUI GameTimerText;
     public GameObject TurnText;
 
     [Header("Arrays")]
     public Button[] Buttons;
-    public TextMeshProUGUI[] Timers;
     public GameObject[] UIs;
 
-    private TextMeshProUGUI StartTimerText;
     private TextMeshProUGUI TimerText;
     private GameObject playerUI;
 
@@ -40,21 +40,16 @@ public class GameManager : MonoBehaviour
 
     // Start is called before the first frame update
     void Start()
-    {
-        /*TODO: Turn off functionality at game start. Start countdown. Either send message 
-         to server to send to clients to start game, or just start countdown. That should also work. 
-        Then game starts. Give blocker side about 3 seconds of descicion time, 
-        then the turn ends and runner has to react within abt. 1.5f seconds.*/
-        
+    {  
         foreach(GameObject ui in UIs) { ui.SetActive(false); }
-        StartTimerText = Timers[0];
-        StartTimerText.gameObject.SetActive(true);
+        ScoreText.enabled = false;
         TurnText.SetActive(false);
+        GameTimer = 5f;
 
         // If the GameManager is instantiated (and therefore the Start method is called),
         // this means that both players have joined and the game is ready to start.
         GameReady = false;
-        player = FindObjectOfType<ClientBehaviour>();
+        Client = FindObjectOfType<ClientBehaviour>();
     }
 
     // Update is called once per frame
@@ -63,26 +58,17 @@ public class GameManager : MonoBehaviour
         if (!GameReady) GameSetup();
         else
         {
+            GameTimer -= Time.deltaTime;
+            GameTimerText.SetText("Time left: " + GameTimer.ToString("F0"));
+            ScoreText.SetText(Score.ToString());
             if (Turn)
             {
-                foreach (Button button in Buttons) button.enabled = true;
+                foreach (Button button in Buttons) button.interactable = true;
                 TurnText.GetComponent<TextMeshProUGUI>().SetText("YOUR TURN");
-
-                // ! TIMER FUNCTIONALITY.
-                //TurnTimer -= Time.deltaTime;
-                //TimerText.SetText(TurnTimer.ToString("F0"));
-                //if (TurnTimer <= 0)
-                //{
-                //    // do something.
-                //    player.SendActionToServer((uint)DataCodes.PASS_TURN);
-                //    Turn = false;
-                //    if (player.PlayerNum == 1) TurnTimer = 5f;
-                //    else TurnTimer = 2f;
-                //}
             }
             else
             {
-                foreach (Button button in Buttons) button.enabled = false;
+                foreach (Button button in Buttons) button.interactable = true;
                 TurnText.GetComponent<TextMeshProUGUI>().SetText("OTHER PLAYER IS DECIDING...");
             }
         }
@@ -90,63 +76,90 @@ public class GameManager : MonoBehaviour
 
     private void GameSetup()
     {
-        StartGameTimer -= Time.deltaTime;
-        StartTimerText.SetText("GAME START IN: " + StartGameTimer.ToString("F0"));
-        if (StartGameTimer < 0)
+        GameTimer -= Time.deltaTime;
+        GameTimerText.SetText("GAME START IN: " + GameTimer.ToString("F0"));
+        if (GameTimer < 0)
         {
-            StartTimerText.gameObject.SetActive(false);
+            GameTimerText.gameObject.SetActive(false);
 
-            if (player.PlayerNum == 1)
+            if (Client.PlayerNum == 1)
             {
-                TimerText = Timers[1];
                 playerUI = UIs[0];
                 playerUI.SetActive(true);
+                Turn = true;
             }
-            else if (player.PlayerNum == 2)
+            else if (Client.PlayerNum == 2)
             {
-                TimerText = Timers[2];
                 playerUI = UIs[1];
                 playerUI.SetActive(true);
+                Turn = false;
             }
 
+            GameTimer = 60f;
+            ScoreText.enabled = true;
             TurnText.SetActive(true);
             GameReady = true;
         }
     }
 
+    public void AssignScore(DataCodes pResultCode)
+    {
+        // TODO Display score as well!!
+        switch (pResultCode)
+        {
+            case DataCodes.P1_ROUND_WON:
+                if (Client.PlayerNum == 1) Score += 1;
+                break;
+
+            case DataCodes.P1_ROUND_LOST:
+                if (Client.PlayerNum == 2) Score += 1;
+                break;
+
+            case DataCodes.ROUND_TIE:
+                break;
+        }
+    }
+
+    private void GameOver()
+    {
+        // Load some kind of screen, send message to server (which sends it to other player)
+        // that the game is over.
+        // TODO !! End the game, save the score and send it to the database !!
+    }
+
     #region Button Functions
     // Runner Actions
-    public void RunnerJump() 
+    public void P1_STEEN() 
     { 
-        player.SendActionToServer((uint)DataCodes.RUNNER_JUMP); 
-        player.SendActionToServer((uint)DataCodes.PASS_TURN);  
+        Client.SendActionToServer((uint)DataCodes.P1_STEEN); 
+        Turn = false;
     }
-    public void RunnerDodge() 
+    public void P1_PAPIER() 
     {
-        player.SendActionToServer((uint)DataCodes.RUNNER_DODGE);
-        player.SendActionToServer((uint)DataCodes.PASS_TURN);  
+        Client.SendActionToServer((uint)DataCodes.P1_PAPIER);
+        Turn = false;
     }
-    public void RunnerAttack() 
+    public void P1_SCHAAR() 
     {
-        player.SendActionToServer((uint)DataCodes.RUNNER_ATTACK);
-        player.SendActionToServer((uint)DataCodes.PASS_TURN);  
+        Client.SendActionToServer((uint)DataCodes.P1_SCHAAR);
+        Turn = false;
     }
 
     // Blocker Actions
-    public void BlockerObstacle() 
+    public void P2_STEEN() 
     {
-        player.SendActionToServer((uint)DataCodes.BLOCKER_OBSTACLE);
-        player.SendActionToServer((uint)DataCodes.PASS_TURN);  
+        Client.SendActionToServer((uint)DataCodes.P2_STEEN);
+        Turn = false;
     }
-    public void BlockerGhost() 
+    public void P2_PAPIER() 
     {
-        player.SendActionToServer((uint)DataCodes.BLOCKER_ENEMY_GHOST);
-        player.SendActionToServer((uint)DataCodes.PASS_TURN);  
+        Client.SendActionToServer((uint)DataCodes.P2_PAPIER);
+        Turn = false;
     }
-    public void BlockerGrunt() 
+    public void P2_SCHAAR() 
     {
-        player.SendActionToServer((uint)DataCodes.BLOCKER_ENEMY_GRUNT);
-        player.SendActionToServer((uint)DataCodes.PASS_TURN);  
+        Client.SendActionToServer((uint)DataCodes.P2_SCHAAR);
+        Turn = false;
     }
     #endregion
 }

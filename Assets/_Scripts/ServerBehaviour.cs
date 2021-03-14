@@ -1,6 +1,7 @@
 ﻿using TMPro;
 using UnityEngine;
 using Unity.Collections;
+using System.Collections;
 using Unity.Networking.Transport;
 using System.Collections.Generic;
 
@@ -9,23 +10,35 @@ public enum DataCodes
     DEBUG_MESSAGE = 0,
     PING = 1,
     PASS_TURN = 2,
+    REQUEST_USERNAME = 3,
 
-    READY_PLAYER_ONE = 10,
-    READY_PLAYER_TWO = 11,
+    READY_RUNNER = 10,
+    READY_BLOCKER = 11,
     
     START_GAME = 20,
     END_GAME = 21,
+    P1_ROUND_WON = 22,
+    P1_ROUND_LOST = 23,
+    ROUND_TIE = 26,
 
-    BLOCKER_DEFAULT = 100,
-    BLOCKER_OBSTACLE = 101,
-    BLOCKER_ENEMY_GHOST = 102,
-    BLOCKER_ENEMY_GRUNT = 103,
+    P1_DEFAULT = 100,
+    P1_STEEN = 101,
+    P1_PAPIER = 102,
+    P1_SCHAAR = 103,
 
-    RUNNER_DEFAULT = 110,
-    RUNNER_JUMP = 111,
-    RUNNER_DODGE = 112,
-    RUNNER_ATTACK = 113,
+    P2_DEFAULT = 110,
+    P2_STEEN = 111,
+    P2_PAPIER = 112,
+    P2_SCHAAR = 113,
 }
+
+public struct PlayerStruct
+{
+    public int PlayerNum;
+    public string Username;
+    public NetworkConnection Connection;
+}
+
 
 // TODO HANDLE DISCONNECTS AND TIMEOUTS
 public class ServerBehaviour : MonoBehaviour
@@ -37,12 +50,10 @@ public class ServerBehaviour : MonoBehaviour
 
     #region Generic Variables
     public TextMeshProUGUI ServerNumber, ServerConnectionsNumber;
-    public DataCodes BlockerAction, RunnerAction;
+    public DataCodes P1_ACTION, P2_ACTION;
 
+    private List<PlayerStruct> players = new List<PlayerStruct>();
     private bool pOneReady, pTwoReady;
-
-    [SerializeField]
-    private List<NativeString64> players = new List<NativeString64>();
     #endregion
 
     #region Singleton
@@ -130,46 +141,50 @@ public class ServerBehaviour : MonoBehaviour
                             SendActionToOther(connections[i], (uint)DataCodes.PASS_TURN);
                             break;
 
-                        case (uint)DataCodes.READY_PLAYER_ONE:
+                        case (uint)DataCodes.READY_RUNNER:
                             pOneReady = true;
                             PlayersReady();
                             break;
 
-                        case (uint)DataCodes.READY_PLAYER_TWO:
+                        case (uint)DataCodes.READY_BLOCKER:
                             pTwoReady = true;
                             PlayersReady();
                             break;
 
-                        case (uint)DataCodes.RUNNER_JUMP:
-                            // if (BlockerAction != Obstacle) subtract lives?
-                            // else continue game, maybe display success message.
-                            RunnerAction = DataCodes.RUNNER_JUMP;
+                        case (uint)DataCodes.P1_STEEN:
+                            P1_ACTION = DataCodes.P1_STEEN;
                             Debug.Log("Runner has jumped!");
+                            SendActionToOther(connections[i], (uint)DataCodes.PASS_TURN);
                             break;
 
-                        case (uint)DataCodes.RUNNER_DODGE:
-                            RunnerAction = DataCodes.RUNNER_DODGE;
+                        case (uint)DataCodes.P1_PAPIER:
+                            P1_ACTION = DataCodes.P1_PAPIER;
                             Debug.Log("Runner has dodged!");
+                            SendActionToOther(connections[i], (uint)DataCodes.PASS_TURN);
                             break;
 
-                        case (uint)DataCodes.RUNNER_ATTACK:
-                            RunnerAction = DataCodes.RUNNER_ATTACK;
+                        case (uint)DataCodes.P1_SCHAAR:
+                            P1_ACTION = DataCodes.P1_SCHAAR;
                             Debug.Log("Runner has attacked!");
-                            break; 
+                            SendActionToOther(connections[i], (uint)DataCodes.PASS_TURN);
+                            break;
 
-                        case (uint)DataCodes.BLOCKER_OBSTACLE:
-                            BlockerAction = DataCodes.BLOCKER_OBSTACLE;
+                        case (uint)DataCodes.P2_STEEN:
+                            P2_ACTION = DataCodes.P2_STEEN;
                             Debug.Log("Blocker has placed an obstacle!");
+                            DetermineTurnWinner();
                             break;
 
-                        case (uint)DataCodes.BLOCKER_ENEMY_GHOST:
-                            BlockerAction = DataCodes.BLOCKER_ENEMY_GHOST;
+                        case (uint)DataCodes.P2_PAPIER:
+                            P2_ACTION = DataCodes.P2_PAPIER;
                             Debug.Log("Blocker has sent a ghost!");
+                            DetermineTurnWinner();
                             break;
 
-                        case (uint)DataCodes.BLOCKER_ENEMY_GRUNT:
-                            BlockerAction = DataCodes.BLOCKER_ENEMY_GRUNT;
+                        case (uint)DataCodes.P2_SCHAAR:
+                            P2_ACTION = DataCodes.P2_SCHAAR;
                             Debug.Log("Client has sent a grunt!");
+                            DetermineTurnWinner();
                             break;
 
                         default:
@@ -242,7 +257,6 @@ public class ServerBehaviour : MonoBehaviour
     /// <param name="pAction"></param>
     public void SendActionToOther(NetworkConnection pClient, uint pAction)
     {
-        Debug.LogWarning("Preparing to send message to client...");
         for (int i = 0; i < connections.Length; i++)
         {
             // Skip a connection if it is stale.
@@ -250,7 +264,6 @@ public class ServerBehaviour : MonoBehaviour
 
             if (connections[i] != pClient)
             {
-                Debug.Log("Sending message to " + connections[i].ToString());
                 var writer = Driver.BeginSend(connections[i]);
                 writer.WriteUInt(pAction);
                 Driver.EndSend(writer);
@@ -260,9 +273,32 @@ public class ServerBehaviour : MonoBehaviour
 
     private void DetermineTurnWinner()
     {
-        // Check client and server actions.
+        switch (P1_ACTION)
+        {
+            case DataCodes.P1_STEEN:
+                if (P2_ACTION == DataCodes.P2_PAPIER) SendActionToClients((uint)DataCodes.P1_ROUND_LOST);
+                else if (P2_ACTION == DataCodes.P2_STEEN) SendActionToClients((uint)DataCodes.ROUND_TIE);
+                else SendActionToClients((uint)DataCodes.P1_ROUND_WON);
+                break;
 
-        // Big if-statement or otherwise switch here comparing the two and handeling accordingly.
+            case DataCodes.P1_PAPIER:
+                if (P2_ACTION == DataCodes.P2_SCHAAR) SendActionToClients((uint)DataCodes.P1_ROUND_LOST);
+                else if (P2_ACTION == DataCodes.P2_PAPIER) SendActionToClients((uint)DataCodes.ROUND_TIE);
+                else SendActionToClients((uint)DataCodes.P1_ROUND_WON);
+                break;
+
+            case DataCodes.P1_SCHAAR:
+                if (P2_ACTION == DataCodes.P2_STEEN) SendActionToClients((uint)DataCodes.P1_ROUND_LOST);
+                else if (P2_ACTION == DataCodes.P2_SCHAAR) SendActionToClients((uint)DataCodes.ROUND_TIE);
+                else SendActionToClients((uint)DataCodes.P1_ROUND_WON);
+                break;
+
+            default:
+                Debug.LogError("No value to compare!");
+                break;
+        }
+
+        // TODO DON'T FORGET TO "RESET" ROUND FOR AS FAR AS NEEDED AND ASSIGN POINTS.
     }
 
     private void OnDestroy()

@@ -2,6 +2,7 @@
 using Unity.Collections;
 using System.Collections;
 using Unity.Networking.Transport;
+using UnityEngine.SceneManagement;
 
 public class ClientBehaviour : MonoBehaviour
 {
@@ -73,8 +74,8 @@ public class ClientBehaviour : MonoBehaviour
             {
                 Debug.Log("Succesfully connected to the server!");
 
-                if (PlayerNum == 1) SendActionToServer((uint)DataCodes.READY_PLAYER_ONE);
-                else if (PlayerNum == 2) SendActionToServer((uint)DataCodes.READY_PLAYER_TWO);
+                if (PlayerNum == 1) SendActionToServer((uint)DataCodes.READY_RUNNER);
+                else if (PlayerNum == 2) SendActionToServer((uint)DataCodes.READY_BLOCKER);
 
                 Connected = true;
             }
@@ -98,12 +99,21 @@ public class ClientBehaviour : MonoBehaviour
 
                     case (uint)DataCodes.START_GAME:
                         Debug.Log("Players ready! Starting game...");
-                        if (PlayerNum == 1) GameManager.Instance.Turn = true;
-                        else GameManager.Instance.Turn = false;
                         GameReady = true;
                         break;
-                }
 
+                    case (uint)DataCodes.P1_ROUND_WON:
+                        GameManager.Instance.AssignScore(DataCodes.P1_ROUND_WON);
+                        break;
+
+                    case (uint)DataCodes.P1_ROUND_LOST:
+                        GameManager.Instance.AssignScore(DataCodes.P1_ROUND_LOST);
+                        break;
+
+                    case (uint)DataCodes.ROUND_TIE:
+                        GameManager.Instance.AssignScore(DataCodes.ROUND_TIE);
+                        break;
+                }
             }
 
             // On a disconnect event, display disconnect message and reset connection.
@@ -113,6 +123,7 @@ public class ClientBehaviour : MonoBehaviour
                 Connection = default;
                 Connected = false;
                 CancelInvoke();
+                SceneManager.LoadScene("Login");
 
                 //Disconnect client.
                 //Done = true;
