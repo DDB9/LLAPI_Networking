@@ -30,6 +30,8 @@ public enum DataCodes
     P2_STEEN = 111,
     P2_PAPIER = 112,
     P2_SCHAAR = 113,
+
+    // Incoming Score to post = 150;
 }
 
 public struct PlayerStruct
@@ -51,6 +53,8 @@ public class ServerBehaviour : MonoBehaviour
     #region Generic Variables
     public TextMeshProUGUI ServerNumber, ServerConnectionsNumber;
     public DataCodes P1_ACTION, P2_ACTION;
+    [HideInInspector]
+    public string serverPassword;
 
     private List<PlayerStruct> players = new List<PlayerStruct>();
     private bool pOneReady, pTwoReady;
@@ -187,9 +191,24 @@ public class ServerBehaviour : MonoBehaviour
                             DetermineTurnWinner();
                             break;
 
+
+
                         default:
                             break;
                     }
+                    #endregion
+
+                    #region string data
+                    string _data = stream.ReadString().ToString();
+
+                    // Example string: 150,Tester,12
+                    if (_data.StartsWith("150"))
+                    {
+                        var _info = _data.Split(',');
+                        // Info = {"150", "Tester", "12" }; 
+                        StartCoroutine(Main.Instance.Web.PostScore(int.Parse(ServerNumber.text), serverPassword, _info[1], int.Parse(_info[2])));
+                    }
+                            
                     #endregion
                 }
 

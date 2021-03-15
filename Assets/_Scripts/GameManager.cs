@@ -1,6 +1,7 @@
 ﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Unity.Collections;
 using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
@@ -60,6 +61,11 @@ public class GameManager : MonoBehaviour
         {
             GameTimer -= Time.deltaTime;
             GameTimerText.SetText("Time left: " + GameTimer.ToString("F0"));
+            if (GameTimer <= 0)
+            {
+                GameOver();
+            }
+
             ScoreText.SetText(Score.ToString());
             if (Turn)
             {
@@ -80,8 +86,6 @@ public class GameManager : MonoBehaviour
         GameTimerText.SetText("GAME START IN: " + GameTimer.ToString("F0"));
         if (GameTimer < 0)
         {
-            GameTimerText.gameObject.SetActive(false);
-
             if (Client.PlayerNum == 1)
             {
                 playerUI = UIs[0];
@@ -104,7 +108,7 @@ public class GameManager : MonoBehaviour
 
     public void AssignScore(DataCodes pResultCode)
     {
-        // TODO Display score as well!!
+        // TODO Display result as well!!
         switch (pResultCode)
         {
             case DataCodes.P1_ROUND_WON:
@@ -122,6 +126,8 @@ public class GameManager : MonoBehaviour
 
     private void GameOver()
     {
+        // TODO TEST THIS OUT AFTER DINNER. PRAY IT WORKS.
+        Client.SendActionToServer("150," + Main.Instance.CurrentUser.Username + "," + Score);
         // Load some kind of screen, send message to server (which sends it to other player)
         // that the game is over.
         // TODO !! End the game, save the score and send it to the database !!
