@@ -13,8 +13,9 @@ public class Main : MonoBehaviour
     public static Main Instance { get { return _instance; } }
     
     public WebRequester Web; 
-    public User CurrentUser;
-    public Server CurrentServer;
+    public DataStructs.User CurrentUser;
+    public DataStructs.Server CurrentServer;
+    public GameObject PlayerObject;
 
     [HideInInspector]
     public NetworkConfigParameter NetworkConfig = new NetworkConfigParameter()
@@ -39,5 +40,26 @@ public class Main : MonoBehaviour
     void Start()
     {
         Web = GetComponent<WebRequester>();
+    }
+
+    public int ConcatInt(int a, int b)
+    {
+        string _stringA = a.ToString();
+        string _stringB = b.ToString();
+
+        string _concatString = _stringA + _stringB;
+        int _concatInt = int.Parse(_concatString);
+
+        return _concatInt;
+    }    
+    public uint ConcatInt(uint a, uint b)
+    {
+        string _stringA = a.ToString();
+        string _stringB = b.ToString();
+
+        string _concatString = _stringA + _stringB;
+        uint _concatInt = uint.Parse(_concatString);
+
+        return _concatInt;
     }
 }

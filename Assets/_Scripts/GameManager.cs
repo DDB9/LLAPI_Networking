@@ -1,4 +1,5 @@
 ﻿using TMPro;
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 using Unity.Collections;
@@ -16,13 +17,14 @@ public class GameManager : MonoBehaviour
     public bool Turn = false;
     public float GameTimer = 5f;
     public TextMeshProUGUI GameTimerText;
-    public GameObject TurnText;
+    public GameObject TurnText, GameOverScreen;
 
     [Header("Arrays")]
     public Button[] Buttons;
     public GameObject[] UIs;
 
-    private TextMeshProUGUI TimerText;
+    private float gameTime = 60f;
+    private TextMeshProUGUI timerText;
     private GameObject playerUI;
 
     #region Singleton
@@ -82,6 +84,8 @@ public class GameManager : MonoBehaviour
 
     private void GameSetup()
     {
+        GameOverScreen.SetActive(false);
+
         GameTimer -= Time.deltaTime;
         GameTimerText.SetText("GAME START IN: " + GameTimer.ToString("F0"));
         if (GameTimer < 0)
@@ -99,7 +103,7 @@ public class GameManager : MonoBehaviour
                 Turn = false;
             }
 
-            GameTimer = 60f;
+            GameTimer = gameTime;
             ScoreText.enabled = true;
             TurnText.SetActive(true);
             GameReady = true;
@@ -124,13 +128,11 @@ public class GameManager : MonoBehaviour
         }
     }
 
+
     private void GameOver()
     {
-        // TODO TEST THIS OUT AFTER DINNER. PRAY IT WORKS.
-        Client.SendActionToServer("150," + Main.Instance.CurrentUser.Username + "," + Score);
-        // Load some kind of screen, send message to server (which sends it to other player)
-        // that the game is over.
-        // TODO !! End the game, save the score and send it to the database !!
+        GameOverScreen.SetActive(true);
+        Client.SendActionToServer((uint)DataCodes.END_GAME);
     }
 
     #region Button Functions
@@ -166,6 +168,12 @@ public class GameManager : MonoBehaviour
     {
         Client.SendActionToServer((uint)DataCodes.P2_SCHAAR);
         Turn = false;
+    }
+
+    // Misc.
+    public void QuitGame()
+    {
+        Application.Quit();
     }
     #endregion
 }

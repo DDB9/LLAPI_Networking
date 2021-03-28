@@ -73,9 +73,7 @@ public class ClientBehaviour : MonoBehaviour
             if (cmd == NetworkEvent.Type.Connect)
             {
                 Debug.Log("Succesfully connected to the server!");
-
-                if (PlayerNum == 1) SendActionToServer((uint)DataCodes.READY_RUNNER);
-                else if (PlayerNum == 2) SendActionToServer((uint)DataCodes.READY_BLOCKER);
+                SendActionToServer(Main.Instance.ConcatInt((int)DataCodes.USERINFO, Main.Instance.CurrentUser.UserID));
 
                 Connected = true;
             }
@@ -86,11 +84,24 @@ public class ClientBehaviour : MonoBehaviour
                 uint dataCode = stream.ReadUInt();
                 switch (dataCode)
                 {
+                    case (uint)DataCodes.LOGIN_ERROR:
+                        Driver.Disconnect(Connection);
+                        Main.Instance.Web.ServerMessagesText.SetText("Something went wrong trying to log in. Please try again.");
+                        break;
+
                     case (uint)DataCodes.DEBUG_MESSAGE:
                         Debug.Log("Debug message recieved!");
                         break;
                     
                     case (uint)DataCodes.PING:
+                        break;
+
+                    case (uint)DataCodes.ASSIGN_P1:
+                        PlayerNum = 1;
+                        break;
+                    
+                    case (uint)DataCodes.ASSIGN_P2:
+                        PlayerNum = 2;
                         break;
 
                     case (uint)DataCodes.PASS_TURN:
@@ -125,6 +136,7 @@ public class ClientBehaviour : MonoBehaviour
                 CancelInvoke();
                 SceneManager.LoadScene("Login");
 
+                // ! Send a message to the server that there was a disconnect so it can shut down the game.
                 //Disconnect client.
                 //Done = true;
                 //Connection.Disconnect(Driver);
@@ -134,16 +146,43 @@ public class ClientBehaviour : MonoBehaviour
         }
     }
 
+    public void ReadyUp()
+    {
+        if (PlayerNum == 1) SendActionToServer((uint)DataCodes.P1_READY);
+        else if (PlayerNum == 2) SendActionToServer((uint)DataCodes.P2_READY);
+    }
+
+    public NativeString64 CreateUser()
+    {
+        Main.Instance.CurrentUser.PlayerNum = PlayerNum;
+        Main.Instance.CurrentUser.Connection = Connection;
+
+        StartCoroutine(Main.Instance.Web.PostMessage(JsonUtility.ToJson(Main.Instance.CurrentUser)));
+        return JsonUtility.ToJson(Main.Instance.CurrentUser);
+    }
+
     public void SendActionToServer(uint pAction)
     {
         var writer = Driver.BeginSend(Connection);
         writer.WriteUInt(pAction);
+        Driver.EndSend(writer);
+    }      
+    public void SendActionToServer(int pAction)
+    {
+        var writer = Driver.BeginSend(Connection);
+        writer.WriteInt(pAction);
         Driver.EndSend(writer);
     }  
     public void SendActionToServer(byte pAction)
     {
         var writer = Driver.BeginSend(Connection);
         writer.WriteByte(pAction);
+        Driver.EndSend(writer);
+    }
+    public void SendActionToServer(ulong pAction)
+    {
+        var writer = Driver.BeginSend(Connection);
+        writer.WriteULong(pAction);
         Driver.EndSend(writer);
     }
     public void SendActionToServer(NativeString64 pAction)

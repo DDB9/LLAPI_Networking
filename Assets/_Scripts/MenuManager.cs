@@ -9,7 +9,6 @@ public class MenuManager : MonoBehaviour
     public TextMeshProUGUI HeaderText;
     public GameObject LoadingScreen;
 
-    private GameObject client;
     private bool enterGame;
 
     private void Awake()
@@ -23,31 +22,15 @@ public class MenuManager : MonoBehaviour
 
     private void Start()
     {
-        HeaderText.SetText("Welcome " + Main.Instance.CurrentUser.Username + "!");
-    }
-
-    public void PlayBlocker()
-    {
-        LoadingScreen.SetActive(true);
-
-        // Create a new client object for this client.
-        client = new GameObject("client");
-        client.AddComponent<ClientBehaviour>();
-        client.GetComponent<ClientBehaviour>().PlayerNum = 1;
-
-        enterGame = true;
+        HeaderText.SetText("Welcome user No." + Main.Instance.CurrentUser.UserID + "!");
     }    
 
+    // This works because you cannot push this button unless you're logged in.
     public void PlayRunner()
     {
         LoadingScreen.SetActive(true);
-
-        // Create a new client object for this client.
-        client = new GameObject("client");
-        client.AddComponent<ClientBehaviour>();
-        client.GetComponent<ClientBehaviour>().PlayerNum = 2;
-
         enterGame = true;
+        Main.Instance.PlayerObject.GetComponent<ClientBehaviour>().ReadyUp();
     }
 
     private void Update()
@@ -57,7 +40,7 @@ public class MenuManager : MonoBehaviour
 
     private void EnterGame()
     {
-        if (client.GetComponent<ClientBehaviour>().GameReady)
+        if (Main.Instance.PlayerObject.GetComponent<ClientBehaviour>().GameReady)
             SceneManager.LoadScene("Game");
     }
 }

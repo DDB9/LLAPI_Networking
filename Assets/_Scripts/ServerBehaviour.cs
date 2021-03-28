@@ -10,10 +10,13 @@ public enum DataCodes
     DEBUG_MESSAGE = 0,
     PING = 1,
     PASS_TURN = 2,
-    REQUEST_USERNAME = 3,
+    USERINFO = 3,
+    LOGIN_ERROR = 4,
 
-    READY_RUNNER = 10,
-    READY_BLOCKER = 11,
+    ASSIGN_P1 = 10,
+    ASSIGN_P2 = 11,
+    P1_READY = 12,
+    P2_READY = 13,
     
     START_GAME = 20,
     END_GAME = 21,
@@ -34,14 +37,6 @@ public enum DataCodes
     // Incoming Score to post = 150;
 }
 
-public struct PlayerStruct
-{
-    public int PlayerNum;
-    public string Username;
-    public NetworkConnection Connection;
-}
-
-
 // TODO HANDLE DISCONNECTS AND TIMEOUTS
 public class ServerBehaviour : MonoBehaviour
 {
@@ -56,8 +51,9 @@ public class ServerBehaviour : MonoBehaviour
     [HideInInspector]
     public string serverPassword;
 
-    private List<PlayerStruct> players = new List<PlayerStruct>();
+    public List<DataStructs.User> Players = new List<DataStructs.User>();
     private bool pOneReady, pTwoReady;
+    private bool duplicatePlayer;
     #endregion
 
     #region Singleton
@@ -86,6 +82,7 @@ public class ServerBehaviour : MonoBehaviour
         connections = new NativeList<NetworkConnection>(2, Allocator.Persistent);
 
         ServerNumber.SetText("Server number: " + Main.Instance.CurrentServer.ServerID);
+        Main.Instance.ServerBuild = true;
     }
 
     void Update()
@@ -130,85 +127,120 @@ public class ServerBehaviour : MonoBehaviour
                 {
                     #region uint data
                     uint dataCode = stream.ReadByte();
-
-                    switch (dataCode)
+                    try
                     {
-                        case (uint)DataCodes.PING:
-                            SendActionToClient(connections[i], (uint)DataCodes.PING);
-                            break;
+                        switch (dataCode)
+                        {
+                            case (uint)DataCodes.PING:
+                                SendActionToClient(connections[i], (uint)DataCodes.PING);
+                                break;
 
-                        case (uint)DataCodes.DEBUG_MESSAGE:
-                            SendActionToClient(connections[i], (uint)DataCodes.DEBUG_MESSAGE);
-                            break;
+                            case (uint)DataCodes.DEBUG_MESSAGE:
+                                SendActionToClient(connections[i], (uint)DataCodes.DEBUG_MESSAGE);
+                                break;
 
-                        case (uint)DataCodes.PASS_TURN:
-                            SendActionToOther(connections[i], (uint)DataCodes.PASS_TURN);
-                            break;
+                            case (uint)DataCodes.P1_READY:
+                                pOneReady = true;
+                                PlayersReady();
+                                break;
 
-                        case (uint)DataCodes.READY_RUNNER:
-                            pOneReady = true;
-                            PlayersReady();
-                            break;
+                            case (uint)DataCodes.P2_READY:
+                                pTwoReady = true;
+                                PlayersReady();
+                                break;
 
-                        case (uint)DataCodes.READY_BLOCKER:
-                            pTwoReady = true;
-                            PlayersReady();
-                            break;
+                            case (uint)DataCodes.PASS_TURN:
+                                SendActionToOther(connections[i], (uint)DataCodes.PASS_TURN);
+                                break;
 
-                        case (uint)DataCodes.P1_STEEN:
-                            P1_ACTION = DataCodes.P1_STEEN;
-                            Debug.Log("Runner has jumped!");
-                            SendActionToOther(connections[i], (uint)DataCodes.PASS_TURN);
-                            break;
+                            case (uint)DataCodes.P1_STEEN:
+                                P1_ACTION = DataCodes.P1_STEEN;
+                                Debug.Log("Runner has jumped!");
+                                SendActionToOther(connections[i], (uint)DataCodes.PASS_TURN);
+                                break;
 
-                        case (uint)DataCodes.P1_PAPIER:
-                            P1_ACTION = DataCodes.P1_PAPIER;
-                            Debug.Log("Runner has dodged!");
-                            SendActionToOther(connections[i], (uint)DataCodes.PASS_TURN);
-                            break;
+                            case (uint)DataCodes.P1_PAPIER:
+                                P1_ACTION = DataCodes.P1_PAPIER;
+                                Debug.Log("Runner has dodged!");
+                                SendActionToOther(connections[i], (uint)DataCodes.PASS_TURN);
+                                break;
 
-                        case (uint)DataCodes.P1_SCHAAR:
-                            P1_ACTION = DataCodes.P1_SCHAAR;
-                            Debug.Log("Runner has attacked!");
-                            SendActionToOther(connections[i], (uint)DataCodes.PASS_TURN);
-                            break;
+                            case (uint)DataCodes.P1_SCHAAR:
+                                P1_ACTION = DataCodes.P1_SCHAAR;
+                                Debug.Log("Runner has attacked!");
+                                SendActionToOther(connections[i], (uint)DataCodes.PASS_TURN);
+                                break;
 
-                        case (uint)DataCodes.P2_STEEN:
-                            P2_ACTION = DataCodes.P2_STEEN;
-                            Debug.Log("Blocker has placed an obstacle!");
-                            DetermineTurnWinner();
-                            break;
+                            case (uint)DataCodes.P2_STEEN:
+                                P2_ACTION = DataCodes.P2_STEEN;
+                                Debug.Log("Blocker has placed an obstacle!");
+                                DetermineTurnWinner();
+                                break;
 
-                        case (uint)DataCodes.P2_PAPIER:
-                            P2_ACTION = DataCodes.P2_PAPIER;
-                            Debug.Log("Blocker has sent a ghost!");
-                            DetermineTurnWinner();
-                            break;
+                            case (uint)DataCodes.P2_PAPIER:
+                                P2_ACTION = DataCodes.P2_PAPIER;
+                                Debug.Log("Blocker has sent a ghost!");
+                                DetermineTurnWinner();
+                                break;
 
-                        case (uint)DataCodes.P2_SCHAAR:
-                            P2_ACTION = DataCodes.P2_SCHAAR;
-                            Debug.Log("Client has sent a grunt!");
-                            DetermineTurnWinner();
-                            break;
+                            case (uint)DataCodes.P2_SCHAAR:
+                                P2_ACTION = DataCodes.P2_SCHAAR;
+                                Debug.Log("Client has sent a grunt!");
+                                DetermineTurnWinner();
+                                break;
 
+                            case (uint)DataCodes.END_GAME:
+                                EndGame();
+                                break;
 
-
-                        default:
-                            break;
+                            default:
+                                break;
+                        }
                     }
-                    #endregion
-
-                    #region string data
-                    string _data = stream.ReadString().ToString();
-
-                    // Example string: 150,Tester,12
-                    if (_data.StartsWith("150"))
+                    catch (System.Exception e)
                     {
-                        var _info = _data.Split(',');
-                        // Info = {"150", "Tester", "12" }; 
-                        StartCoroutine(Main.Instance.Web.PostScore(int.Parse(ServerNumber.text), serverPassword, _info[1], int.Parse(_info[2])));
+                        Debug.LogError(e.Message);
                     }
-                            
+
+                    if (dataCode.ToString().StartsWith("3"))
+                    {
+                        int _data = int.Parse(dataCode.ToString().Split('3')[1]);
+                        if (Players.Count <= 0)
+                        {
+                            Players.Add(new DataStructs.User()
+                            {
+                                UserID = _data,
+                                PlayerNum = 1,
+                                Score = 0,
+                                Connection = connections[i]
+                            });
+                            SendActionToClient(connections[i], (uint)DataCodes.ASSIGN_P1);
+                        }
+                        else
+                        {
+                            foreach (DataStructs.User user in Players)
+                            {
+                                // Check if the player has already logged in.
+                                if (user.UserID == _data)
+                                {
+                                    SendActionToClient(connections[i], (uint)DataCodes.LOGIN_ERROR);
+                                    duplicatePlayer = true;
+                                }
+                            }
+
+                            if (!duplicatePlayer)
+                            {
+                                Players.Add(new DataStructs.User()
+                                {
+                                    UserID = _data,
+                                    PlayerNum = 2,
+                                    Score = 0,
+                                    Connection = connections[i]
+                                });
+                                SendActionToClient(connections[i], (uint)DataCodes.ASSIGN_P2);
+                            }
+                        }
+                    }
                     #endregion
                 }
 
@@ -230,6 +262,19 @@ public class ServerBehaviour : MonoBehaviour
             return true;
         }
         return false;
+    }
+
+    public void EndGame()
+    {
+        // First, send the scores to the server.
+        foreach (DataStructs.User player in Players)
+        {
+            // Post the scores to the database...
+            StartCoroutine(Main.Instance.Web.PostScore(player.UserID, player.Score));
+        }
+
+        // Shutdown server.
+
     }
 
     public void SendActionToClients(uint pAction)
@@ -295,21 +340,65 @@ public class ServerBehaviour : MonoBehaviour
         switch (P1_ACTION)
         {
             case DataCodes.P1_STEEN:
-                if (P2_ACTION == DataCodes.P2_PAPIER) SendActionToClients((uint)DataCodes.P1_ROUND_LOST);
+                if (P2_ACTION == DataCodes.P2_PAPIER)
+                {
+                    foreach (DataStructs.User player in Players)
+                    {
+                        if (player.PlayerNum == 2) player.Score += 1;
+                    }
+                    SendActionToClients((uint)DataCodes.P1_ROUND_LOST);
+                }
                 else if (P2_ACTION == DataCodes.P2_STEEN) SendActionToClients((uint)DataCodes.ROUND_TIE);
-                else SendActionToClients((uint)DataCodes.P1_ROUND_WON);
+                else
+                {
+                    foreach (DataStructs.User player in Players)
+                    {
+                        if (player.PlayerNum == 1) player.Score += 1;
+                    }
+                    SendActionToClients((uint)DataCodes.P1_ROUND_WON);
+                }
                 break;
+
 
             case DataCodes.P1_PAPIER:
-                if (P2_ACTION == DataCodes.P2_SCHAAR) SendActionToClients((uint)DataCodes.P1_ROUND_LOST);
+                if (P2_ACTION == DataCodes.P2_SCHAAR)
+                {
+                    foreach (DataStructs.User player in Players)
+                    {
+                        if (player.PlayerNum == 2) player.Score += 1;
+                    }
+                    SendActionToClients((uint)DataCodes.P1_ROUND_LOST);
+                }
                 else if (P2_ACTION == DataCodes.P2_PAPIER) SendActionToClients((uint)DataCodes.ROUND_TIE);
-                else SendActionToClients((uint)DataCodes.P1_ROUND_WON);
+                else
+                {
+                    foreach (DataStructs.User player in Players)
+                    {
+                        if (player.PlayerNum == 1) player.Score += 1;
+                    }
+                    SendActionToClients((uint)DataCodes.P1_ROUND_WON);
+                }
                 break;
 
+
             case DataCodes.P1_SCHAAR:
-                if (P2_ACTION == DataCodes.P2_STEEN) SendActionToClients((uint)DataCodes.P1_ROUND_LOST);
+                if (P2_ACTION == DataCodes.P2_STEEN)
+                {
+                    foreach (DataStructs.User player in Players)
+                    {
+                        if (player.PlayerNum == 2) player.Score += 1;
+                    }
+                    SendActionToClients((uint)DataCodes.P1_ROUND_LOST);
+                }
                 else if (P2_ACTION == DataCodes.P2_SCHAAR) SendActionToClients((uint)DataCodes.ROUND_TIE);
-                else SendActionToClients((uint)DataCodes.P1_ROUND_WON);
+                else
+                {
+                    foreach (DataStructs.User player in Players)
+                    {
+                        if (player.PlayerNum == 1) player.Score += 1;
+                    }
+                    SendActionToClients((uint)DataCodes.P1_ROUND_WON);
+                }
                 break;
 
             default:
