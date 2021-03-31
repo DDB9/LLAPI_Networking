@@ -9,7 +9,7 @@ public class GameManager : MonoBehaviour
 {
     public ClientBehaviour Client;
     public int Score = 0;
-    public TextMeshProUGUI ScoreText;
+    public TextMeshProUGUI ScoreText, ResultText;
 
     [HideInInspector]
     public bool GameReady = true;
@@ -23,7 +23,8 @@ public class GameManager : MonoBehaviour
     public Button[] Buttons;
     public GameObject[] UIs;
 
-    private float gameTime = 60f;
+    private float gameTime = 10f;    // TODO CHANGE BACK TO 60F.
+    private bool runOnce;
     private TextMeshProUGUI timerText;
     private GameObject playerUI;
 
@@ -65,7 +66,7 @@ public class GameManager : MonoBehaviour
             GameTimerText.SetText("Time left: " + GameTimer.ToString("F0"));
             if (GameTimer <= 0)
             {
-                GameOver();
+                if (!runOnce) GameOver();
             }
 
             ScoreText.SetText(Score.ToString());
@@ -76,7 +77,7 @@ public class GameManager : MonoBehaviour
             }
             else
             {
-                foreach (Button button in Buttons) button.interactable = true;
+                foreach (Button button in Buttons) button.interactable = false;
                 TurnText.GetComponent<TextMeshProUGUI>().SetText("OTHER PLAYER IS DECIDING...");
             }
         }
@@ -116,23 +117,40 @@ public class GameManager : MonoBehaviour
         switch (pResultCode)
         {
             case DataCodes.P1_ROUND_WON:
-                if (Client.PlayerNum == 1) Score += 1;
+                if (Client.PlayerNum == 1)
+                {
+                    Score += 1;
+                    ResultText.SetText("YOU WIN");
+                }
+                else ResultText.SetText("YOU LOSE");
                 break;
 
             case DataCodes.P1_ROUND_LOST:
-                if (Client.PlayerNum == 2) Score += 1;
+                if (Client.PlayerNum == 2)
+                {
+                    Score += 1;
+                    ResultText.SetText("YOU WIN");
+                }
+                else ResultText.SetText("YOU LOSE");
                 break;
 
             case DataCodes.ROUND_TIE:
                 break;
         }
+        ResultText.gameObject.SetActive(true);
     }
 
 
     private void GameOver()
     {
+        GameOverScreen.transform.GetChild(0).GetComponent<TextMeshProUGUI>().SetText("Score: " + Score);
         GameOverScreen.SetActive(true);
         Client.SendActionToServer((uint)DataCodes.END_GAME);
+        
+        // turn off the client component.
+        Client.enabled = false;
+
+        runOnce = true;
     }
 
     #region Button Functions

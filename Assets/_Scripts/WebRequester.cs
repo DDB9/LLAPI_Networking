@@ -57,6 +57,7 @@ public class WebRequester : MonoBehaviour
                     Debug.Log("User " + _result + " has succesfully logged in");
 
                     Main.Instance.PlayerObject = new GameObject("client");
+                    Main.Instance.PlayerObject.AddComponent<ConsoleToGUI>();
                     Main.Instance.PlayerObject.AddComponent<ClientBehaviour>();
 
                     WelcomeScreen.SetActive(true);

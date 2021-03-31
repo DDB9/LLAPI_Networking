@@ -87,6 +87,7 @@ public class ClientBehaviour : MonoBehaviour
                     case (uint)DataCodes.LOGIN_ERROR:
                         Driver.Disconnect(Connection);
                         Main.Instance.Web.ServerMessagesText.SetText("Something went wrong trying to log in. Please try again.");
+                        SceneManager.LoadScene("Login");
                         break;
 
                     case (uint)DataCodes.DEBUG_MESSAGE:
@@ -202,6 +203,11 @@ public class ClientBehaviour : MonoBehaviour
         }
     }
 
+    public void DC()
+    {
+        Driver.Dispose();
+        Connected = false;
+    }
     private void OnDestroy()
     {
         Driver.Dispose();

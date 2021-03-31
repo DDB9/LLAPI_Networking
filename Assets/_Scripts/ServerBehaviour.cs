@@ -155,38 +155,36 @@ public class ServerBehaviour : MonoBehaviour
 
                             case (uint)DataCodes.P1_STEEN:
                                 P1_ACTION = DataCodes.P1_STEEN;
-                                Debug.Log("Runner has jumped!");
                                 SendActionToOther(connections[i], (uint)DataCodes.PASS_TURN);
                                 break;
 
                             case (uint)DataCodes.P1_PAPIER:
                                 P1_ACTION = DataCodes.P1_PAPIER;
-                                Debug.Log("Runner has dodged!");
                                 SendActionToOther(connections[i], (uint)DataCodes.PASS_TURN);
                                 break;
 
                             case (uint)DataCodes.P1_SCHAAR:
                                 P1_ACTION = DataCodes.P1_SCHAAR;
-                                Debug.Log("Runner has attacked!");
                                 SendActionToOther(connections[i], (uint)DataCodes.PASS_TURN);
                                 break;
 
                             case (uint)DataCodes.P2_STEEN:
                                 P2_ACTION = DataCodes.P2_STEEN;
-                                Debug.Log("Blocker has placed an obstacle!");
                                 DetermineTurnWinner();
+                                SendActionToOther(connections[i], (uint)DataCodes.PASS_TURN);
                                 break;
 
                             case (uint)DataCodes.P2_PAPIER:
                                 P2_ACTION = DataCodes.P2_PAPIER;
-                                Debug.Log("Blocker has sent a ghost!");
                                 DetermineTurnWinner();
+                                SendActionToOther(connections[i], (uint)DataCodes.PASS_TURN);
                                 break;
 
                             case (uint)DataCodes.P2_SCHAAR:
                                 P2_ACTION = DataCodes.P2_SCHAAR;
-                                Debug.Log("Client has sent a grunt!");
                                 DetermineTurnWinner();
+
+                                SendActionToOther(connections[i], (uint)DataCodes.PASS_TURN);
                                 break;
 
                             case (uint)DataCodes.END_GAME:
@@ -274,7 +272,7 @@ public class ServerBehaviour : MonoBehaviour
         }
 
         // Shutdown server.
-
+        Destroy(this);
     }
 
     public void SendActionToClients(uint pAction)
@@ -405,8 +403,6 @@ public class ServerBehaviour : MonoBehaviour
                 Debug.LogError("No value to compare!");
                 break;
         }
-
-        // TODO DON'T FORGET TO "RESET" ROUND FOR AS FAR AS NEEDED AND ASSIGN POINTS.
     }
 
     private void OnDestroy()
