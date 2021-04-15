@@ -136,13 +136,6 @@ public class ClientBehaviour : MonoBehaviour
                 Connected = false;
                 CancelInvoke();
                 SceneManager.LoadScene("Login");
-
-                // ! Send a message to the server that there was a disconnect so it can shut down the game.
-                //Disconnect client.
-                //Done = true;
-                //Connection.Disconnect(Driver);
-                //Connection = default;
-                //Connected = false;
             }
         }
     }

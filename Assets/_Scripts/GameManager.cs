@@ -23,7 +23,7 @@ public class GameManager : MonoBehaviour
     public Button[] Buttons;
     public GameObject[] UIs;
 
-    private float gameTime = 10f;    // TODO CHANGE BACK TO 60F.
+    private float gameTime = 60f;
     private bool runOnce;
     private TextMeshProUGUI timerText;
     private GameObject playerUI;
@@ -113,7 +113,6 @@ public class GameManager : MonoBehaviour
 
     public void AssignScore(DataCodes pResultCode)
     {
-        // TODO Display result as well!!
         switch (pResultCode)
         {
             case DataCodes.P1_ROUND_WON:
