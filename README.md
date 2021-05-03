@@ -1,5 +1,5 @@
 # LLAPI_Networking
-School Assignment. Simple Multiplayer game with myPhpAdmin database
+School Assignment. Simple Multiplayer game with myPhpAdmin database.
 
 How to setup:
 1. Start 3 game instances.
