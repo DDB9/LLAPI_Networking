@@ -1,0 +1,21 @@
+{
+  "name": "com.unity.transport",
+  "displayName": "Unity Transport",
+  "version": "0.3.1-preview.4",
+  "unity": "2019.3",
+  "unityRelease": "0b11",
+  "description": "Unity network transport layer - the low-level interface for sending UDP data",
+  "dependencies": {
+    "com.unity.burst": "1.3.0",
+    "com.unity.collections": "0.9.0-preview.5",
+    "com.unity.mathematics": "1.1.0"
+  },
+  "upmCi": {
+    "footprint": "d3e0fb24c701f830362f2d356df7db48fc140e2f"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Unity-Technologies/netcode.git",
+    "revision": "2fb0954cceae679b397cea825faf7fc34e258ced"
+  }
+}
